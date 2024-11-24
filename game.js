@@ -546,7 +546,7 @@ class Player extends GameObject {
 
         this.cubePosition = null; // for storing the cube geometry 3d position 
 
-
+        this.groundLevel = -13; // ground position for stopping Gravity on Cube 
 
     }
     hit_animation() {
@@ -564,6 +564,11 @@ class Player extends GameObject {
         // update cube 3d position
         if (window.THREE_RENDER.cube) {
             this.cubePosition = window.THREE_RENDER.getCubePosition();
+
+            // add gravity to cube
+            if (this.cubePosition.y > this.groundLevel) {
+                window.THREE_RENDER.setCubePosition(this.cubePosition.x, this.cubePosition.y -= 0.03, this.cubePosition.z);
+            }
         }
 
         // Restart Game After win
@@ -586,8 +591,9 @@ class Player extends GameObject {
             console.log("Cube Position Debug: ", Math.ceil(this.cubePosition.x), "/", Math.ceil(this.cubePosition.y), "/");
 
             // Game Win Conditional
-            // round float to integer
-            if (Math.ceil(this.pos.x - this.cubePosition.x) == 0) {
+            // 
+            // Hit Collision Detection
+            if (Math.ceil(this.pos.x - this.cubePosition.x) <= 1) { //margin of error
                 console.log("Player And Cube Overlap on X Axis");
 
                 // increase score count
@@ -597,7 +603,7 @@ class Player extends GameObject {
                 //window.THREE_RENDER.deleteCube();
             }
 
-            if (Math.ceil(this.pos.y - this.cubePosition.y == 0)) {
+            if (Math.ceil(this.pos.y - this.cubePosition.y) <= 1) {
                 console.log("Player And Cube Overlap on Y Axis");
 
                 //increase score count
@@ -626,7 +632,7 @@ class Player extends GameObject {
             // To DO: 
             // (1) Set The Cube In a Random Position
             //window.THREE_RENDER.setCubePosition(this.pos.x, this.pos.y, 0);
-            window.THREE_RENDER.setCubePosition(Math.random() * 10 - 5, Math.random() * 10 - 5, 0);
+            window.THREE_RENDER.setCubePosition(Math.random() * 10 - 5, Math.random() * 15 - 8, 0);
 
         }
 
