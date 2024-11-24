@@ -11,17 +11,7 @@ Main Game Logic
 
 // TO DO: import only the modules you need for faster load time
 import * as THREE from 'https://unpkg.com/three@0.170.0/build/three.module.js';//'/node_modules/three/src/Three.js';
-//import LJS from "/node_modules/littlejsengine/dist/littlejs.js";
-//import { Scene } from '/node_modules/three/src/scenes/Scene.js';
-//import { PerspectiveCamera } from '/node_modules/three/src/cameras/PerspectiveCamera.js';
-//import { WebGLRenderer } from '/node_modules/three/src/renderers/WebGLRenderer.js';
-//import { BoxGeometry } from '/node_modules/three/src/geometries/BoxGeometry.js';
-//import { WireframeGeometry } from '/node_modules/three/src/geometries/WireframeGeometry.js';
-//import { LineBasicMaterial } from '/node_modules/three/src/materials/LineBasicMaterial.js';
-//import { LineSegments } from '/node_modules/three/src/objects/LineSegments.js';
 
-
-//import { ZZFX, zzfx } from '../node_modules/zzfx/ZzFX.js';
 
 // show the LittleJS splash screen
 setShowSplashScreen(true);
@@ -65,14 +55,19 @@ class Music {
 
         this.zelda_powerup = new Sound([1.5, , 214, .05, .19, .3, 1, .1, , , 167, .05, .09, , , , .11, .8, .15, .22]); // Powerup 9// Powerup 9
 
+        // sound effects
+        this.sound_start = new Sound([, 0, 500, , .04, .3, 1, 2, , , 570, .02, .02, , , , .04]);
+        this.sound_break = new Sound([, , 90, , .01, .03, 4, , , , , , , 9, 50, .2, , .2, .01]);
+        this.sound_bounce = new Sound([, , 1e3, , .03, .02, 1, 2, , , 940, .03, , , , , .2, .6, , .06]);
 
         //
-        this.current_track = "track placeholder";
-        this.next_track = "";
-        this.default_playlist = { 0: "", 1: "" };
+        this.current_track = null;//"track placeholder";
+        this.next_track = null;//"";
+        this.default_playlist = null;//{ 0: "", 1: "" };
         this.timer = new Timer();
         this.counter = 0;
         // Map sounds to different sound effects and play them via an enumerator/global script
+        //required for a music shuffler
         this.sfx_playlist = new Map([
             [this.zelda_powerup, 0],
             [this.sound_shoot, 1],
@@ -180,7 +175,7 @@ Functions
 
 */
 
-class Inventory { 
+class Inventory {
 
 
     constructor() {
@@ -252,57 +247,68 @@ class ThreeRender {
 
 
     constructor() {
+        //super();
+        // create a global threejs object
         this.THREE = THREE;
 
+        console.log("Three JS Debug 1: ", this.THREE);
 
-        // Call the async function to load Three.js
-        //loadThreeJS().then(console.log("Three.js pointer debug :", this.THREE))
+        const { Scene, PerspectiveCamera, WebGLRenderer } = this.THREE;
 
-        //l
-
-        console.log("THree JS Debug 1: ", this.THREE);
-
-
-        //create3d();
-
-        //return 0;
-
-
-        //async function loadThreeJS() {
-        //import * as THREE from '/node_modules/three/src/Three.js';
-        //const THREE = await import('/node_modules/three/src/Three.js');
-        //this.THREE = THREE;
-        //console.log("111111111");
-        //    return 0;
-        //}
-    };
-
-    initializeScene() {
-        console.log("Creating 3D Object");
-
-        //loadThreeJS()
-
-        this.nothing = 0;
-
-        const { Scene, PerspectiveCamera, WebGLRenderer, BufferAttribute, BufferGeometry, MeshBasicMaterial, Mesh } = this.THREE;
-
+        //make  scene and camera globally accessible
         // Create the scene, camera, and renderer
-        const scene = new Scene();
-        const camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        this.scene = new Scene();
+        this.camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.renderer = new WebGLRenderer();
+
+
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
 
         // Append the renderer's DOM element to your target layer
-        const threejsLayer = document.getElementById("threejs-layer");
-        threejsLayer.appendChild(renderer.domElement);
+        var threejsLayer = document.getElementById("threejs-layer");
+        threejsLayer.appendChild(this.renderer.domElement);
+
+        // A placeholder for the cube mesh
+        this.cube = null;
+
+    };
+    renderAnimation() {
+
+        // class wide animation function
+        this.renderer.render(this.scene, this.camera);
+        //requestAnimationFrame(animate);
+
+    }
+
+
+    renderStill() {
+        // renders a still image with no animmation
+        this.renderer.render(this.scene, this.camera);
+
+    }
+
+    Cube() {
+
+        /**
+        AN OPtimised way of drawing a Cube in Threejs using Webgl directly 
+        
+         Features:
+         (1)Fast Loading Of 3d geometry using Webgl directly and optimised
+
+         To DO:
+         (1) Add Positional Parameters CUbe Objects
+        
+        */
+
+
+        console.log("Creating 3D Cube Object");
+
+        // Load required Libraries from Global THreejs class
+        const { BufferAttribute, BufferGeometry, MeshBasicMaterial, Mesh } = this.THREE;
 
 
         // Geometry and wireframe
-        //const cubeGeometry = new THREE.BoxGeometry(); // Cube geometry
-        //const wireframe = new THREE.WireframeGeometry(cubeGeometry); // Create a wireframe from the geometry
-        //const wireframeMaterial = new THREE.LineBasicMaterial({ color: 0xffffff }); // Material for the lines
-        //const wireframeCube = new THREE.LineSegments(wireframe, wireframeMaterial); // LineSegments for wireframe
-        //scene.add(wireframeCube);
+        //
 
         // Create a rotating cube
         //const geometry = new BoxGeometry();
@@ -365,15 +371,7 @@ class ThreeRender {
         geometry.setIndex(indices); // Use indices for efficiency
 
 
-        //light
-        //const directionalLight = new DirectionalLight(0xffffff, 1);
-        //directionalLight.position.set(5, 5, 5).normalize();
 
-
-        // Lighting
-        //const ambientLight = new AmbientLight(0xffffff, 0.5); // Soft white light
-
-        //const wireframeMaterial = LineBasicMaterial({ color: 0xffffff }); // Material for the lines
         // Green 0x00ff00
         //White 0xffffff
 
@@ -388,34 +386,64 @@ class ThreeRender {
 
 
         // set mesh geometry and material
-        const cube = new Mesh(geometry, material);
+        this.cube = new Mesh(geometry, material);
 
-        //Add Geometry to scene
-        scene.add(cube);
-
-        //Add Light TO scene
-        //scene.add(directionalLight);
-        //scene.add(ambientLight);
+        //return this.cube;
+        this.scene.add(this.cube)
 
 
-        camera.position.z = 16;
-        // Render ANimation In a Loop
-        // Animation loop
-        // Animation loop
+    }
+
+    //addToScene(mesh) {
+    // accepts only a Mesh Type
+    //Add Geometry to scene
+    //    this.scene.add(mesh);
+
+
+    //}
+    setCubePosition(x, y, z) {
+        if (this.cube) {
+            this.cube.position.set(x, y, z);
+        } else {
+            console.warn("Cube has not been created yet.");
+        }
+    }
+
+    getCubePosition() {
+        if (this.cube) {
+            return {
+                x: this.cube.position.x,
+                y: this.cube.position.y,
+                z: this.cube.position.z,
+            };
+        } else {
+            console.warn("Cube has not been created yet.");
+            return null;
+        }
+    }
+
+
+    setCamera(Int_Distance) {
+        // Sets the camera at a specific distance
+        this.camera.position.z = Int_Distance;
+
+    }
+
+    animate() {
+        // Bind `this` to preserve context in animation loop
         const animate = () => {
             requestAnimationFrame(animate);
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
-            renderer.render(scene, camera);
+
+            // Rotate the cube
+            if (this.cube) {
+                this.cube.rotation.x += 0.01;
+                this.cube.rotation.y += 0.01;
+            }
+
+            // Render the scene
+            this.renderer.render(this.scene, this.camera);
         };
-
-        function renderStill() {
-            renderer.render(scene, camera);
-        }
-
-        // Start animation
         animate();
-        //renderStill();
     }
 }
 
@@ -462,11 +490,18 @@ class Player extends GameObject {
         // Update Globals With Player Pointer
         this.health = window.globals.health
 
+        // create a pointer to the Particle fx class
+
         // store player object in global array
         window.globals.players.push(this)
 
         this.color = RED;
 
+    }
+    hit_animation() {
+
+        //use a timer to flash the player object colour from orig  -> white -> orig
+        return 0;
     }
 
     update() {
@@ -475,11 +510,16 @@ class Player extends GameObject {
         // sets Player Sprite Position to Mouse Position
         this.pos = mousePos;
 
+        // Player Objects Handles All Input
+        if (keyWasPressed('KeyW')) { //works
+            console.log("key W as pressed! ")
+            new ParticleFX(this.pos, this.size)
+        }
         //window.music.play_track();
         //THis triggers when the player makes an input giving permission from the dom to play Music
         // hacky fix
         //if (window.music.counter < 250) { //caps the amount of loops needed to trigger music
-            //window.music.play_track();
+        //window.music.play_track();
         //    window.music.play_track();
         //    return 0;
         //}
@@ -524,10 +564,26 @@ class Items extends GameObject {
     }
 }
 
-class ParticleFX {
+class ParticleFX extends GameObject {
     // Extends LittleJS Particle FX mapped to an enumerator
+    // attach a trail effect
+    constructor(pos, size) {
+        super();
+        const color = hsl(0, 0, .2);
+        this.trailEffect = new ParticleEmitter(
+            pos, 0,                          // pos, angle
+            size, 0, 80, PI,                 // emitSize, emitTime, emitRate, emiteCone
+            tile(0, 16),                          // tileIndex, tileSize
+            color, color,                         // colorStartA, colorStartB
+            color.scale(0), color.scale(0),       // colorEndA, colorEndB
+            2, .4, 1, .001, .05,// time, sizeStart, sizeEnd, speed, angleSpeed
+            .99, .95, 0, PI,    // damp, angleDamp, gravity, cone
+            .1, .5, 0, 1        // fade, randomness, collide, additive
+        );
 
-
+        // play some sfx
+        window.music.sound_start.play();
+    }
 
 }
 
@@ -555,9 +611,72 @@ class Globals {
     }
 }
 
+// Fruit Manager Class Extend ThreeJS Render Class Wit Custom Commands
+class FruitManager extends ThreeRender {
+
+    constructor() {
 
 
-// LittleJS Main Loop
+        // Create Scene
+        //this.scene = new this.THREE.scene;
+        this.fruits = []; //fruits would be sphere geometry shapes
+        this.gravity = new this.THREE.Vector3(0, -9.8, 0); // Simulate gravity
+
+
+    }
+
+    // Function to spawn a fruit
+    spawnFruit() {
+        // Create a sphere (representing a fruit)
+        const geometry = new this.THREE.SphereGeometry(0.5, 32, 32);
+        const material = new this.THREE.MeshBasicMaterial({ color: this.getRandomColor() });
+        const fruit = new this.THREE.Mesh(geometry, material);
+
+        // Set random position and velocity
+        fruit.position.set(
+            this.THREE.MathUtils.randFloat(-5, 5), // Random X
+            this.THREE.MathUtils.randFloat(1, 5), // Random Y (above the ground)
+            this.THREE.MathUtils.randFloat(-5, 5) // Random Z
+        );
+        fruit.velocity = new this.THREE.Vector3(
+            this.THREE.MathUtils.randFloat(-1, 1), // Random X velocity
+            this.THREE.MathUtils.randFloat(2, 5), // Upward Y velocity
+            this.THREE.MathUtils.randFloat(-1, 1) // Random Z velocity
+        );
+
+        this.fruits.push(fruit);
+        this.scene.add(fruit);
+    }
+
+
+
+    // Function to update fruit positions
+    update(deltaTime) {
+        this.fruits.forEach((fruit) => {
+            // Apply gravity and update position
+            fruit.velocity.add(this.gravity.clone().multiplyScalar(deltaTime));
+            fruit.position.add(fruit.velocity.clone().multiplyScalar(deltaTime));
+
+            // Remove fruits that fall below a certain threshold
+            if (fruit.position.y < -5) {
+                this.scene.remove(fruit);
+                this.fruits = this.fruits.filter((f) => f !== fruit);
+            }
+        });
+    }
+
+    // Utility to get a random color
+    getRandomColor() {
+        return Math.random() * 0xffffff;
+    }
+
+
+
+
+}
+
+
+/* LittleJS Main Loop*/
 
 
 
@@ -568,7 +687,7 @@ function gameInit() {
 
     /* Create 3D Scenes And Objects*/
     window.THREE_RENDER = new ThreeRender();
-    //three_.create3d();
+
 
     /* Create Global Singletons & Run System Tests */
 
@@ -596,11 +715,34 @@ function gameInit() {
     //Debug music fx
     //works
     window.music.zelda_powerup.play();
-    console.log("Music Debug 2: ", window.music.zelda_powerup);
-    console.log("Music Debug 2: ", window.music.current_track);
 
-    //works but runs in a loop. Performance hog
-    window.THREE_RENDER.initializeScene();
+    //console.log("Music Debug 2: ", window.music.zelda_powerup);
+    //console.log("Music Debug 2: ", window.music.current_track);
+
+    //Initialise 3d scene render
+    // (1) Create 2 Cubes
+
+    // It can set 2 cubes but only animate 1 cuz of this.cube pointer limitations
+    window.THREE_RENDER.Cube();
+    //window.THREE_RENDER.Cube();
+
+    console.log("Cube Position Debug: ", window.THREE_RENDER.getCubePosition());
+
+    //window.THREE_RENDER.addToScene(c1);
+    // window.THREE_RENDER.addToScene(c2);
+    window.THREE_RENDER.setCamera(16);
+
+    window.THREE_RENDER.animate();
+
+    // start fruit manager logic
+    //const fruitManager = new FruitManager();
+
+    // Spawn fruits every second
+    //setInterval(() => fruitManager.spawnFruit(), 1000);
+    //const deltaTime = clock.getDelta();
+    //fruitManager.update(deltaTime);
+
+
 
 }
 
@@ -648,6 +790,8 @@ function gameRenderPost() {
     //debug 3d renderer
     //console.log("Three Debug 3: ", window.THREE_RENDER.THREE);
 }
+
+
 
 // Startup LittleJS Engine
 // I can pass in the tilemap and sprite sheet directly to the engine as arrays
