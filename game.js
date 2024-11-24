@@ -50,6 +50,9 @@ class Music {
     constructor() {
 
         console.log("Creating Music Node");
+        // Initialize the LittleJS Sound System
+
+
         this.sound_shoot = new Sound([, , 90, , .01, .03, 4, , , , , , , 9, 50, .2, , .2, .01]);
 
 
@@ -73,9 +76,16 @@ class Music {
             [this.sound_shoot, 1],
         ])
     }
+    playZeldaOpeningLittleJS() {
+        console.log("Playing A Zelda Theme Song");
+
+        // Notes and their corresponding frequencies (in Hz)
+
+
+    }
 
     play_track() {
-
+        //https://music-files-pxchifv2z-sam2much96s-projects.vercel.app/music/310-world-map-loop.ogg
         console.log("310-world-map-loop ", this.counter);
         //document.getElementById("310-world-map-loop").play();
 
@@ -378,7 +388,7 @@ class ThreeRender {
         // Basic material
 
         const material = new MeshBasicMaterial({
-            color: 0xffffff,
+            color: this.getRandomColor(),
             wireframe: false,
             transparent: false,
             opacity: 1.0,
@@ -394,13 +404,11 @@ class ThreeRender {
 
     }
 
-    //addToScene(mesh) {
-    // accepts only a Mesh Type
-    //Add Geometry to scene
-    //    this.scene.add(mesh);
 
+    getRandomColor() {
+        return Math.random() * 0xffffff;
+    }
 
-    //}
     setCubePosition(x, y, z) {
         if (this.cube) {
             this.cube.position.set(x, y, z);
@@ -408,6 +416,8 @@ class ThreeRender {
             console.warn("Cube has not been created yet.");
         }
     }
+
+
 
     getCubePosition() {
         if (this.cube) {
@@ -419,6 +429,28 @@ class ThreeRender {
         } else {
             console.warn("Cube has not been created yet.");
             return null;
+        }
+    }
+
+    deleteCube() {
+        if (this.cube) {
+            // Remove the cube from the scene
+            this.scene.remove(this.cube);
+
+            // Dispose of the cube's geometry and material to free up memory
+            if (this.cube.geometry) {
+                this.cube.geometry.dispose();
+            }
+            if (this.cube.material) {
+                this.cube.material.dispose();
+            }
+
+            // Set the cube reference to null
+            this.cube = null;
+
+            console.log("Cube deleted successfully.");
+        } else {
+            console.warn("No cube to delete.");
         }
     }
 
@@ -495,7 +527,11 @@ class Player extends GameObject {
         // store player object in global array
         window.globals.players.push(this)
 
-        this.color = RED;
+        this.color = randColor();//RED; // make random colour
+
+        this.cubePosition = null; // for storing the cube geometry 3d position 
+
+
 
     }
     hit_animation() {
@@ -510,16 +546,80 @@ class Player extends GameObject {
         // sets Player Sprite Position to Mouse Position
         this.pos = mousePos;
 
+        // update cube 3d position
+        if (window.THREE_RENDER.cube) {
+            this.cubePosition = window.THREE_RENDER.getCubePosition();
+        }
+
+        // Restart Game After win
+        if (mouseWasPressed(0) && !window.THREE_RENDER.cube) {
+
+            //restart game loop
+            //gameInit();
+            location.reload();
+        }
+
+        // Left Click
+        // Nested If's? Bad Code
+        if (mouseWasPressed(0) && window.THREE_RENDER.cube) {
+            console.log(" Mouse Button 0 Pressed");
+            window.music.zelda_powerup.play();
+            //window.music.playZeldaOpeningLittleJS(); // doesnt work
+
+            // Debug Cube's 2d position to see if overlap occured
+            console.log("Player Position Debug: ", Math.ceil(this.pos.x), "/", Math.ceil(this.pos.y));
+            console.log("Cube Position Debug: ", Math.ceil(this.cubePosition.x), "/", Math.ceil(this.cubePosition.y), "/");
+
+            // Game Win Conditional
+            // round float to integer
+            if (Math.ceil(this.pos.x - this.cubePosition.x) == 0) {
+                console.log("Player And Cube Overlap on X Axis");
+
+                //spawn 2d particle fx
+                new ParticleFX(this.pos, this.size);
+
+                // delete Cube
+                window.THREE_RENDER.deleteCube();
+            }
+
+            if (Math.ceil(this.pos.y - this.cubePosition.y == 0)) {
+                console.log("Player And Cube Overlap on Y Axis");
+
+                //spawn 2d particle fx
+                new ParticleFX(this.pos, this.size);
+
+                //delete cube
+                window.THREE_RENDER.deleteCube();
+            }
+        }
+
+        if (mouseWasReleased(0)) {
+            console.log(" Mouse Button 0 Released");
+            //window.music.zelda_powerup.play();
+
+            // To DO: 
+            // (1) Set The Cube In a Random Position
+            //window.THREE_RENDER.setCubePosition(this.pos.x, this.pos.y, 0);
+            window.THREE_RENDER.setCubePosition(Math.random() * 10 - 5, Math.random() * 10 - 5, 0);
+
+        }
+
+
+        // RIght Click
+
+        // Add Win Condition
+        // If Cube and Player's X Position Overlap
+
         // Player Objects Handles All Input
         if (keyWasPressed('KeyW')) { //works
             console.log("key W as pressed! ")
-            new ParticleFX(this.pos, this.size)
+
         }
         //window.music.play_track();
         //THis triggers when the player makes an input giving permission from the dom to play Music
         // hacky fix
         //if (window.music.counter < 250) { //caps the amount of loops needed to trigger music
-        //window.music.play_track();
+        //    window.music.play_track();
         //    window.music.play_track();
         //    return 0;
         //}
@@ -565,17 +665,21 @@ class Items extends GameObject {
 }
 
 class ParticleFX extends GameObject {
+    // TO DO : (1) Make A Sub function within Player Class 
+    // 
     // Extends LittleJS Particle FX mapped to an enumerator
     // attach a trail effect
     constructor(pos, size) {
         super();
-        const color = hsl(0, 0, .2);
-        this.trailEffect = new ParticleEmitter(
+        this.color = new Color(0, 0, 0, 0); // make object invisible
+
+        const color__ = hsl(0, 0, .2);
+        const trailEffect = new ParticleEmitter(
             pos, 0,                          // pos, angle
             size, 0, 80, PI,                 // emitSize, emitTime, emitRate, emiteCone
             tile(0, 16),                          // tileIndex, tileSize
-            color, color,                         // colorStartA, colorStartB
-            color.scale(0), color.scale(0),       // colorEndA, colorEndB
+            color__, color__,                         // colorStartA, colorStartB
+            color__.scale(0), color__.scale(0),       // colorEndA, colorEndB
             2, .4, 1, .001, .05,// time, sizeStart, sizeEnd, speed, angleSpeed
             .99, .95, 0, PI,    // damp, angleDamp, gravity, cone
             .1, .5, 0, 1        // fade, randomness, collide, additive
@@ -611,69 +715,7 @@ class Globals {
     }
 }
 
-// Fruit Manager Class Extend ThreeJS Render Class Wit Custom Commands
-class FruitManager extends ThreeRender {
 
-    constructor() {
-
-
-        // Create Scene
-        //this.scene = new this.THREE.scene;
-        this.fruits = []; //fruits would be sphere geometry shapes
-        this.gravity = new this.THREE.Vector3(0, -9.8, 0); // Simulate gravity
-
-
-    }
-
-    // Function to spawn a fruit
-    spawnFruit() {
-        // Create a sphere (representing a fruit)
-        const geometry = new this.THREE.SphereGeometry(0.5, 32, 32);
-        const material = new this.THREE.MeshBasicMaterial({ color: this.getRandomColor() });
-        const fruit = new this.THREE.Mesh(geometry, material);
-
-        // Set random position and velocity
-        fruit.position.set(
-            this.THREE.MathUtils.randFloat(-5, 5), // Random X
-            this.THREE.MathUtils.randFloat(1, 5), // Random Y (above the ground)
-            this.THREE.MathUtils.randFloat(-5, 5) // Random Z
-        );
-        fruit.velocity = new this.THREE.Vector3(
-            this.THREE.MathUtils.randFloat(-1, 1), // Random X velocity
-            this.THREE.MathUtils.randFloat(2, 5), // Upward Y velocity
-            this.THREE.MathUtils.randFloat(-1, 1) // Random Z velocity
-        );
-
-        this.fruits.push(fruit);
-        this.scene.add(fruit);
-    }
-
-
-
-    // Function to update fruit positions
-    update(deltaTime) {
-        this.fruits.forEach((fruit) => {
-            // Apply gravity and update position
-            fruit.velocity.add(this.gravity.clone().multiplyScalar(deltaTime));
-            fruit.position.add(fruit.velocity.clone().multiplyScalar(deltaTime));
-
-            // Remove fruits that fall below a certain threshold
-            if (fruit.position.y < -5) {
-                this.scene.remove(fruit);
-                this.fruits = this.fruits.filter((f) => f !== fruit);
-            }
-        });
-    }
-
-    // Utility to get a random color
-    getRandomColor() {
-        return Math.random() * 0xffffff;
-    }
-
-
-
-
-}
 
 
 /* LittleJS Main Loop*/
@@ -714,7 +756,7 @@ function gameInit() {
 
     //Debug music fx
     //works
-    window.music.zelda_powerup.play();
+
 
     //console.log("Music Debug 2: ", window.music.zelda_powerup);
     //console.log("Music Debug 2: ", window.music.current_track);
@@ -726,22 +768,13 @@ function gameInit() {
     window.THREE_RENDER.Cube();
     //window.THREE_RENDER.Cube();
 
-    console.log("Cube Position Debug: ", window.THREE_RENDER.getCubePosition());
+
 
     //window.THREE_RENDER.addToScene(c1);
     // window.THREE_RENDER.addToScene(c2);
     window.THREE_RENDER.setCamera(16);
 
     window.THREE_RENDER.animate();
-
-    // start fruit manager logic
-    //const fruitManager = new FruitManager();
-
-    // Spawn fruits every second
-    //setInterval(() => fruitManager.spawnFruit(), 1000);
-    //const deltaTime = clock.getDelta();
-    //fruitManager.update(deltaTime);
-
 
 
 }
@@ -782,13 +815,14 @@ function gameRenderPost() {
         overlayContext.strokeText(text, x, y);
         overlayContext.fillText(text, x, y);
     }
-    drawText('Health: ' + window.globals.health, overlayCanvas.width * 1 / 4, 20); // Draw Health Bar Instead
-    drawText('Deaths: ' + 0, overlayCanvas.width * 3 / 4, 20);
 
+    if (!window.THREE_RENDER.cube) {
+
+        drawText('You Win Click To Play Again! ', overlayCanvas.width * 2 / 4, 20); // Draw Health Bar Instead
+        //drawText('Deaths: ' + 0, overlayCanvas.width * 3 / 4, 20);
+    }
     //
 
-    //debug 3d renderer
-    //console.log("Three Debug 3: ", window.THREE_RENDER.THREE);
 }
 
 
