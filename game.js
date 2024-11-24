@@ -590,18 +590,29 @@ class Player extends GameObject {
             if (Math.ceil(this.pos.x - this.cubePosition.x) == 0) {
                 console.log("Player And Cube Overlap on X Axis");
 
-                //spawn 2d particle fx
-                new ParticleFX(this.pos, this.size);
+                // increase score count
+                window.globals.score += 1;
 
                 // delete Cube
-                window.THREE_RENDER.deleteCube();
+                //window.THREE_RENDER.deleteCube();
             }
 
             if (Math.ceil(this.pos.y - this.cubePosition.y == 0)) {
                 console.log("Player And Cube Overlap on Y Axis");
 
+                //increase score count
+                window.globals.score += 1;
+
+                //spawn 2d particle fx
+                //new ParticleFX(this.pos, this.size);
+
+            }
+
+            if (window.globals.score >= 3) {
+
                 //spawn 2d particle fx
                 new ParticleFX(this.pos, this.size);
+
 
                 //delete cube
                 window.THREE_RENDER.deleteCube();
@@ -726,7 +737,7 @@ class Globals {
         this.players = []; // internal array to hold all playe objects
         this.scenes = {};// holds pointers to all scenes
         //this.PlayingMusic = false; // boolean for stopping music start loop
-
+        this.score = 0;
     }
 }
 
@@ -832,6 +843,9 @@ function gameRenderPost() {
         overlayContext.lineWidth = 3;
         overlayContext.strokeText(text, x, y);
         overlayContext.fillText(text, x, y);
+    }
+    if (window.THREE_RENDER.cube) {
+        drawText('Score: ' + window.globals.score, overlayCanvas.width * 3 / 4, 20);
     }
 
     if (!window.THREE_RENDER.cube) {
