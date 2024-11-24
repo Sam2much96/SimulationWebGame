@@ -28,6 +28,7 @@ Functions:
 (2) Shuffles Between A Playlist Using Maths module(3) Stores All Music To A Playlist
 (4) Stores All SFX
 (5) Play is called on the sfx track directly
+(6) Music Synthesizer Docs: https://keithclark.github.io/ZzFXM/
 
 Notes:
 (1) The SFX and Music Use 2 Different Systems, SFX USes ZzFX a js midi engine
@@ -63,7 +64,8 @@ class Music {
         this.sound_break = new Sound([, , 90, , .01, .03, 4, , , , , , , 9, 50, .2, , .2, .01]);
         this.sound_bounce = new Sound([, , 1e3, , .03, .02, 1, 2, , , 940, .03, , , , , .2, .6, , .06]);
 
-        //
+        this.zelda = null;
+
         this.current_track = null;//"track placeholder";
         this.next_track = null;//"";
         this.default_playlist = null;//{ 0: "", 1: "" };
@@ -78,7 +80,7 @@ class Music {
     }
     playZeldaOpeningLittleJS() {
         console.log("Playing A Zelda Theme Song");
-
+        this.zelda = new Sound()
         // Notes and their corresponding frequencies (in Hz)
 
 
@@ -86,8 +88,21 @@ class Music {
 
     play_track() {
         //https://music-files-pxchifv2z-sam2much96s-projects.vercel.app/music/310-world-map-loop.ogg
-        console.log("310-world-map-loop ", this.counter);
+        console.log("Music Soundtracks ", this.counter);
         //document.getElementById("310-world-map-loop").play();
+        var sound = new Howl({
+            src: ["https://music-files.vercel.app/music/fairy-fountain.ogg"],// "https://music-files.vercel.app/music/310-world-map-loop.ogg"],
+            format: ['ogg'], // Specify the format(s) of your audio file
+            volume: 0.5,
+            autoplay: true, // Whether to autoplay (optional)
+            loop: true,     // Loop playback (optional)
+            preload: true,   // Preload the audio (default is true)
+
+            onend: function () {
+                console.log("Finished Playing Music");//alert("Finished!");
+            }
+        });
+        sound.play();
 
         //console.log("310-world-map-loop", this.counter);
         //document.getElementById("310-world-map-loop").play();
@@ -564,7 +579,7 @@ class Player extends GameObject {
         if (mouseWasPressed(0) && window.THREE_RENDER.cube) {
             console.log(" Mouse Button 0 Pressed");
             window.music.zelda_powerup.play();
-            //window.music.playZeldaOpeningLittleJS(); // doesnt work
+
 
             // Debug Cube's 2d position to see if overlap occured
             console.log("Player Position Debug: ", Math.ceil(this.pos.x), "/", Math.ceil(this.pos.y));
@@ -738,6 +753,9 @@ function gameInit() {
     window.globals = new Globals;
 
     window.music = new Music;
+
+    // Play Music Loop WIth howler JS
+    window.music.play_track(); // doesnt work
 
     //make global
     //window.music = music;
