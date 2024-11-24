@@ -17,7 +17,7 @@ import * as THREE from 'https://unpkg.com/three@0.170.0/build/three.module.js';/
 setShowSplashScreen(true);
 
 // Show Game Pad on Mobile Devices
-touchGamepadEnable = true;
+//touchGamepadEnable = true;
 
 //console.log("Engine Version: ", engineVersion);
 /*
@@ -548,6 +548,8 @@ class Player extends GameObject {
 
         this.groundLevel = -13; // ground position for stopping Gravity on Cube 
 
+        // Add Player And Cube Collissions Where The Cube Collision tracks the Cube Object
+
     }
     hit_animation() {
 
@@ -574,7 +576,10 @@ class Player extends GameObject {
         // Restart Game After win
         if (mouseWasPressed(0) && !window.THREE_RENDER.cube) {
 
+            console.log("Restarting Game Loop");
             //restart game loop
+            // destroy all objects
+            //engineObjectsDestroy();
             //gameInit();
             location.reload();
         }
@@ -593,7 +598,8 @@ class Player extends GameObject {
             // Game Win Conditional
             // 
             // Hit Collision Detection
-            if (Math.ceil(this.pos.x - this.cubePosition.x) <= 1) { //margin of error
+            // rewrite to use collisions instead
+            if (Math.ceil(this.pos.x - this.cubePosition.x) == 1) { //margin of error
                 console.log("Player And Cube Overlap on X Axis");
 
                 // increase score count
@@ -603,7 +609,7 @@ class Player extends GameObject {
                 //window.THREE_RENDER.deleteCube();
             }
 
-            if (Math.ceil(this.pos.y - this.cubePosition.y) <= 1) {
+            if (Math.ceil(this.pos.y - this.cubePosition.y) == 1) {
                 console.log("Player And Cube Overlap on Y Axis");
 
                 //increase score count
@@ -851,13 +857,16 @@ function gameRenderPost() {
         overlayContext.fillText(text, x, y);
     }
     if (window.THREE_RENDER.cube) {
-        drawText('Score: ' + window.globals.score, overlayCanvas.width * 3 / 4, 20);
+        drawText('Score: ' + window.globals.score + "/3", overlayCanvas.width * 3 / 4, 20);
     }
 
     if (!window.THREE_RENDER.cube) {
 
         drawText('You Win Click To Play Again! ', overlayCanvas.width * 2 / 4, 20); // Draw Health Bar Instead
         //drawText('Deaths: ' + 0, overlayCanvas.width * 3 / 4, 20);
+
+
+
     }
     //
 
