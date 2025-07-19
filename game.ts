@@ -2,8 +2,8 @@
 
 Main Game Logic
 
-(1) Using LittleJS As A Module
-(2) LJS Docs : https://github.com/KilledByAPixel/LittleJS/blob/21a43bc96335fabfd80ecfb132382d6d1a6fea31/src/engineExport.js#L210
+(1) Point and Click
+(2) Searches for overlaps between the 3d layer and threejs layer
 */
 
 "use strict"
@@ -18,6 +18,8 @@ import * as LittleJS from 'littlejsengine';
 const { tile, vec2, hsl,randColor,drawTextScreen, PI, EngineObject,FontImage, Timer, Sound, ParticleEmitter, timeDelta, Color, overlayContext,overlayCanvas,touchGamepadEnable, isTouchDevice, setTouchGamepadSize,setShowSplashScreen, setTouchGamepadEnable,// do not use pixelated rendering
 mousePos,mousePosScreen, mouseWasPressed,mouseWasReleased, keyWasPressed,setTouchGamepadAlpha,initTileCollision,setTouchGamepadAnalog,setSoundVolume,setSoundEnable, vibrate,setCanvasPixelated, setTileCollisionData, setTilesPixelated, setGravity,setCameraPos, setCameraScale, drawText,engineInit } = LittleJS;
 
+
+const { Scene, PerspectiveCamera, WebGLRenderer, BufferAttribute, BufferGeometry, MeshBasicMaterial, Mesh } = THREE;
 // show the LittleJS splash screen
 setShowSplashScreen(true);
 
@@ -269,52 +271,7 @@ Functions
 */
 
 class Inventory {
-    private items : Record<string,number>;
-
-    constructor() {
-        //super();
-        console.log("Loading Inventory Singleton")
-        this.items = {}; // Internal dictionary to store inventory items
-    }
-
-    // Add or update an item in the inventory
-    set(itemName : string, quantity : number) {
-        if (quantity <= 0) {
-            delete this.items[itemName]; // Remove item if quantity is zero or less
-        } else {
-            this.items[itemName] = (this.items[itemName] || 0) + quantity;
-        }
-    }
-
-    // Retrieve the quantity of an item
-    get(itemName: string) {
-        return this.items[itemName] || 0; // Return 0 if the item doesn't exist
-    }
-
-    // Check if an item exists in the inventory
-    has(itemName) {
-        return itemName in this.items;
-    }
-
-    // Remove an item completely from the inventory
-    remove(itemName) {
-        delete this.items[itemName];
-    }
-
-    // Get a list of all items
-    getAllItems() {
-        return { ...this.items }; // Return a copy of the inventory
-    }
-
-    // Count total unique items
-    getItemCount() {
-        return Object.keys(this.items).length;
-    }
-
-    // Count total quantity of all items
-    getTotalQuantity() {
-        return Object.values(this.items).reduce((sum, quantity) => sum + quantity, 0);
-    }
+    
 }
 
 
@@ -350,9 +307,9 @@ class ThreeRender {
         // create a global threejs object
         this.THREE = THREE;
 
-        console.log("Three JS Debug 1: ", this.THREE);
+        //console.log("Three JS Debug 1: ", this.THREE);
 
-        const { Scene, PerspectiveCamera, WebGLRenderer } = this.THREE;
+        
 
         //make  scene and camera globally accessible
         // Create the scene, camera, and renderer
@@ -405,7 +362,7 @@ class ThreeRender {
         console.log("Creating 3D Cube Object");
 
         // Load required Libraries from Global THreejs class
-        const { BufferAttribute, BufferGeometry, MeshBasicMaterial, Mesh } = this.THREE;
+        //const {  } = this.THREE;
 
 
         // Geometry and wireframe
@@ -500,7 +457,7 @@ class ThreeRender {
         return Math.random() * 0xffffff;
     }
 
-    setCubePosition(x, y, z) {
+    setCubePosition(x: number, y : number, z : number) {
         if (this.cube) {
             this.cube.position.set(x, y, z);
         } else {
@@ -546,9 +503,10 @@ class ThreeRender {
     }
 
 
-    setCamera(Int_Distance) {
+    setCamera(Int_Distance: number) {
         // Sets the camera at a specific distance
-        this.camera.position.z = Int_Distance;
+        console.log("Camera Debug: ",this.camera);
+        this.camera.position!.z = Int_Distance;
 
     }
 
@@ -584,15 +542,6 @@ Features:
 
 
 
-class GameObject extends EngineObject {
-    // Base Class for All Game Objects
-    constructor() {
-        super();
-        console.log("Loading Utils Singleton");
-
-    }
-
-}
 
 /*
 PLAYER CLASS
@@ -602,7 +551,7 @@ Features:
 
 */
 
-class Player extends GameObject {
+class Player extends EngineObject {
     public health : number;
     public cubePosition : Vector3 | null;
     public groundLevel : number
@@ -645,9 +594,9 @@ class Player extends GameObject {
         // input singleton and interpolate positional data
         // sets Player Sprite Position to Mouse Position
         // mouse position in the screen space
-        this.velocity = mousePos;
+        this.pos = mousePos;
 
-        super.update();
+        //super.update();
 
         // update cube 3d position
         if (window.THREE_RENDER.cube) {
@@ -706,6 +655,7 @@ class Player extends GameObject {
 
             }
 
+            // Win condition
             if (window.globals.score >= 3) {
 
                 //spawn 2d particle fx
@@ -721,33 +671,16 @@ class Player extends GameObject {
             console.log(" Mouse Button 0 Released");
             //window.music.zelda_powerup.play();
 
-            // To DO: 
+            // Logic : 
             // (1) Set The Cube In a Random Position
-            //window.THREE_RENDER.setCubePosition(this.pos.x, this.pos.y, 0);
+            //
             window.THREE_RENDER.setCubePosition(Math.random() * 10 - 5, Math.random() * 15 - 8, 0);
 
         }
 
 
-        // RIght Click
 
-        // Add Win Condition
-        // If Cube and Player's X Position Overlap
-
-        // Player Objects Handles All Input
-        if (keyWasPressed('KeyW')) { //works
-            console.log("key W as pressed! ")
-
-        }
         //window.music.play_track();
-        //THis triggers when the player makes an input giving permission from the dom to play Music
-        // hacky fix
-        //if (window.music.counter < 250) { //caps the amount of loops needed to trigger music
-        //    window.music.play_track();
-        //    window.music.play_track();
-        //    return 0;
-        //}
-        //save input data to Input Class via globals
 
 
     }
@@ -755,12 +688,12 @@ class Player extends GameObject {
 
 
 
-class ParticleFX extends GameObject {
+class ParticleFX extends EngineObject {
     // TO DO : (1) Make A Sub function within Player Class 
     // 
     // Extends LittleJS Particle FX mapped to an enumerator
     // attach a trail effect
-    constructor(pos, size) {
+    constructor(pos: LittleJS.Vector2, size: LittleJS.Vector2) {
         super();
         this.color = new Color(0, 0, 0, 0); // make object invisible
 
@@ -858,9 +791,7 @@ function gameInit() {
 
 
     // Add  Inventory Items
-    window.inventory.set("apple", 5);
-    window.inventory.set("banana", 3);
-    console.log(window.inventory.getAllItems());
+
 
     //const TwoDCanvas = document.getElementById('littlejs-2d-layer')
 
@@ -951,6 +882,6 @@ function gameRenderPost() {
 // Startup LittleJS Engine
 // I can pass in the tilemap and sprite sheet directly to the engine as arrays
 // i can also convert tile data to json from tiled editor and parse that instead
-engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRenderPost, ['tiles.png']);
+engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRenderPost, ['']);
 
 
