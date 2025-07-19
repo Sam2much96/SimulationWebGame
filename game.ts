@@ -10,8 +10,13 @@ Main Game Logic
 
 
 // TO DO: import only the modules you need for faster load time
-import * as THREE from 'https://unpkg.com/three@0.170.0/build/three.module.js';//'/node_modules/three/src/Three.js';
+import * as THREE from 'three';//'/node_modules/three/src/Three.js';
+//import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
+import * as LittleJS from 'littlejsengine';
+
+const { tile, vec2, hsl,randColor,drawTextScreen, PI, EngineObject,FontImage, Timer, Sound, ParticleEmitter, timeDelta, Color, overlayContext,overlayCanvas,touchGamepadEnable, isTouchDevice, setTouchGamepadSize,setShowSplashScreen, setTouchGamepadEnable,// do not use pixelated rendering
+mousePos,mousePosScreen, mouseWasPressed,mouseWasReleased, keyWasPressed,setTouchGamepadAlpha,initTileCollision,setTouchGamepadAnalog,setSoundVolume,setSoundEnable, vibrate,setCanvasPixelated, setTileCollisionData, setTilesPixelated, setGravity,setCameraPos, setCameraScale, drawText,engineInit } = LittleJS;
 
 // show the LittleJS splash screen
 setShowSplashScreen(true);
@@ -43,10 +48,92 @@ Notes:
 
 
 
-// sound effects
+/* Declare Global Singletons
 
+ So Typescript is aware of new properties that aren't a default in windows
+*/
+declare global {
+    interface Window {
+        inventory: Inventory,
+        ui: UI,
+        THREE_RENDER: ThreeRender,
+        globals: Globals,
+
+        music: Music,
+        //input: Inputs,
+        player: Player,
+        enemy: any,//Enemy,
+        wallet: any,//Wallet;
+        
+        useItem: any; 
+
+    }
+
+    interface Vector2 {
+        x: number;
+        y: number;
+        copy(): Vector2;
+        add(arg0: Vector2): Vector2;
+        multiply(arg0: Vector2): Vector2;
+        //directionTo(arg0: Vector2, arg1: Vector2): Vector2;
+
+
+    }
+
+    interface Vector3 {
+        x: number;
+        y: number;
+        z: number;
+    }
+
+    interface player_info { 0 :{ //server peer id
+        posi:Vector2, // position
+        vel:Vector2, // velocity
+        fr:number, // frame data
+        in:number, // input buffer from input singleton
+        hp:number,
+        st:number, // roll back networking state predictions
+        rd:Vector2, // roll direction
+        dx:number,
+        up:number, //persistent update id across client peers
+        wa:string, //Wallet address
+        ai:number, //Asset ID
+        sc:number, //Dapp ID
+        kc:number, //Client Kill Count
+        inv:string, // Client inventory items
+        rt:number, // respawn timer
+        hash:string, //hash splice for data integrity
+
+    }
+
+    
+
+}
+}
+
+
+
+// sound effects
+//refactor to use zzfxm
 
 class Music {
+
+    // sound effects
+    public sound_shoot : LittleJS.Sound;
+    public zelda_powerup : LittleJS.Sound;
+    public sound_start : LittleJS.Sound;
+    public sound_break : LittleJS.Sound;
+    public sound_bounce : LittleJS.Sound;
+    public sound_zapp : LittleJS.Sound;
+    public sound_call : LittleJS.Sound;
+    public zelda : String | undefined;
+    public current_track : String | undefined;
+    public next_track : String | undefined;
+    public default_playlist : Map<LittleJS.Sound , number> | null;
+    public sfx_playlist : Map<LittleJS.Sound , number>;
+    public timer : LittleJS.Timer;
+    public counter : number;
+
 
     constructor() {
 
@@ -55,21 +142,23 @@ class Music {
 
 
         this.sound_shoot = new Sound([, , 90, , .01, .03, 4, , , , , , , 9, 50, .2, , .2, .01]);
-
-
-        this.zelda_powerup = new Sound([1.5, , 214, .05, .19, .3, 1, .1, , , 167, .05, .09, , , , .11, .8, .15, .22]); // Powerup 9// Powerup 9
+        this.zelda_powerup = new Sound([1.5, , 214, .05, .19, .3, 1, .1, , , 167, .05, .09, , , , .11, .8, .15, .22]);
 
         // sound effects
         this.sound_start = new Sound([, 0, 500, , .04, .3, 1, 2, , , 570, .02, .02, , , , .04]);
         this.sound_break = new Sound([, , 90, , .01, .03, 4, , , , , , , 9, 50, .2, , .2, .01]);
         this.sound_bounce = new Sound([, , 1e3, , .03, .02, 1, 2, , , 940, .03, , , , , .2, .6, , .06]);
+        this.sound_zapp = new Sound([1.2,,678,.19,.49,.02,1,4.1,-75,9,-263,.43,,.3,3,,.09,.66,.41,.06,381]); // Random 24
+        this.sound_call = new Sound([1.9,,66,.05,.48,.009,,3.1,-38,20,,,.13,,.5,.7,.1,.58,.19,.14,-1495]); // Random 26
+        
+        //this.zelda = null;
 
-        this.zelda = null;
-
-        this.current_track = null;//"track placeholder";
-        this.next_track = null;//"";
+        //this.current_track = null;//"track placeholder";
+        //this.next_track = null;//"";
         this.default_playlist = null;//{ 0: "", 1: "" };
+        
         this.timer = new Timer();
+        
         this.counter = 0;
         // Map sounds to different sound effects and play them via an enumerator/global script
         //required for a music shuffler
@@ -78,41 +167,15 @@ class Music {
             [this.sound_shoot, 1],
         ])
     }
-    playZeldaOpeningLittleJS() {
-        console.log("Playing A Zelda Theme Song");
-        this.zelda = new Sound()
-        // Notes and their corresponding frequencies (in Hz)
-
-
-    }
 
     play_track() {
-        //https://music-files-pxchifv2z-sam2much96s-projects.vercel.app/music/310-world-map-loop.ogg
+        
         console.log("Music Soundtracks ", this.counter);
-        //document.getElementById("310-world-map-loop").play();
-        var sound = new Howl({
-            src: ["https://music-files.vercel.app/music/fairy-fountain.ogg"],// "https://music-files.vercel.app/music/310-world-map-loop.ogg"],
-            format: ['ogg'], // Specify the format(s) of your audio file
-            volume: 0.5,
-            autoplay: true, // Whether to autoplay (optional)
-            loop: true,     // Loop playback (optional)
-            preload: true,   // Preload the audio (default is true)
-
-            onend: function () {
-                console.log("Finished Playing Music");//alert("Finished!");
-            }
-        });
-        sound.play();
-
-        //console.log("310-world-map-loop", this.counter);
-        //document.getElementById("310-world-map-loop").play();
-        //
-        //<audio id="310-world-map-loop">
-        //   <source src="https://drive.google.com/file/d/1fjGxGP-RJtHTA71e3cHfTNUxRKDFtS_x/view?usp=drive_link" type="audio/ogg">
-        //</audio>
-
-
-        this.counter += 1;
+        
+        // to do:
+        // (1) Play sound with zzfxm
+        // (2) Track beat with zzfxm
+        
         //window.globals.PlayingMusic = true;
     }
 
@@ -130,6 +193,9 @@ Functions:
 */
 
 class Inputs {
+    public input_buffer : Array<number>;
+    public input_state : Map<String, number>;
+    public save_buffer : boolean = false;
 
     constructor() {
         // Input Buffer
@@ -161,30 +227,32 @@ class Inputs {
         //
         // Move UP
         //console.log("Testing Input Singleton");
-        if (keyWasPressed('KeyW')) {
-            console.log("key W as pressed! ")
-            this.input_buffer.push(this.input_state.get("UP"));
-        }
+        if (this.save_buffer){ // input buffer logic
+            if (LittleJS.keyWasPressed('KeyW')) {
+                console.log("key W as pressed! ")
+                this.input_buffer.push(this.input_state.get("UP") ?? 0);
+            }
 
-        // Move Down
-        if (keyWasPressed('KeyS')) {
-            this.input_buffer.push(this.input_state.get("DOWN"));
-        }
+            // Move Down
+            if (LittleJS.keyWasPressed('KeyS')) {
+                this.input_buffer.push(this.input_state.get("DOWN") ?? 1);
+            }
 
-        // Move Left
-        if (keyWasPressed('KeyA')) {
-            this.input_buffer.push(this.input_state.get("LEFT"));
-        }
+            // Move Left
+            if (LittleJS.keyWasPressed('KeyA')) {
+                this.input_buffer.push(this.input_state.get("LEFT") ?? 2);
+            }
 
-        // Move Right
-        if (keyWasPressed('KeyD')) {
-            input_buffer.push(this.input_state.get("RIGHT"));
-        }
+            // Move Right
+            if (LittleJS.keyWasPressed('KeyD')) {
+                this.input_buffer.push(this.input_state.get("RIGHT") ?? 3);
+            }
 
 
-        // Prevents Buffer/ Mem Overflow for Input Buffer
-        if (this.input_buffer.length > 12) {
-            this.input_buffer.length = 0; // Clears the array
+            // Prevents Buffer/ Mem Overflow for Input Buffer
+            if (this.input_buffer.length > 12) {
+                this.input_buffer.length = 0; // Clears the array
+            }
         }
     }
 }
@@ -201,7 +269,7 @@ Functions
 */
 
 class Inventory {
-
+    private items : Record<string,number>;
 
     constructor() {
         //super();
@@ -210,7 +278,7 @@ class Inventory {
     }
 
     // Add or update an item in the inventory
-    set(itemName, quantity) {
+    set(itemName : string, quantity : number) {
         if (quantity <= 0) {
             delete this.items[itemName]; // Remove item if quantity is zero or less
         } else {
@@ -219,7 +287,7 @@ class Inventory {
     }
 
     // Retrieve the quantity of an item
-    get(itemName) {
+    get(itemName: string) {
         return this.items[itemName] || 0; // Return 0 if the item doesn't exist
     }
 
@@ -270,6 +338,12 @@ Bugs
 
 class ThreeRender {
 
+    private THREE: typeof THREE;
+    private scene: THREE.Scene;
+    private camera: THREE.PerspectiveCamera;
+    private renderer: THREE.WebGLRenderer;
+    public cube: any | null;
+
 
     constructor() {
         //super();
@@ -291,8 +365,10 @@ class ThreeRender {
 
         // Append the renderer's DOM element to your target layer
         var threejsLayer = document.getElementById("threejs-layer");
-        threejsLayer.appendChild(this.renderer.domElement);
-
+        
+        if (threejsLayer){
+            threejsLayer.appendChild(this.renderer.domElement);
+        }
         // A placeholder for the cube mesh
         this.cube = null;
 
@@ -527,10 +603,17 @@ Features:
 */
 
 class Player extends GameObject {
+    public health : number;
+    public cubePosition : Vector3 | null;
+    public groundLevel : number
+
+    
 
     constructor() {
 
         super();
+        
+        this.mass = 0;
         console.log("Creating Player Sprite");
 
         // Fetch Player Health From Globals Singleton
@@ -561,15 +644,18 @@ class Player extends GameObject {
         // fetching mouse position ever loop is a performance hag, instead, fetch mouse position from 
         // input singleton and interpolate positional data
         // sets Player Sprite Position to Mouse Position
-        this.pos = mousePos;
+        // mouse position in the screen space
+        this.velocity = mousePos;
+
+        super.update();
 
         // update cube 3d position
         if (window.THREE_RENDER.cube) {
             this.cubePosition = window.THREE_RENDER.getCubePosition();
 
             // add gravity to cube
-            if (this.cubePosition.y > this.groundLevel) {
-                window.THREE_RENDER.setCubePosition(this.cubePosition.x, this.cubePosition.y -= 0.03, this.cubePosition.z);
+            if (this.cubePosition!.y > this.groundLevel) {
+                window.THREE_RENDER.setCubePosition(this.cubePosition!.x, this.cubePosition!.y -= 0.03, this.cubePosition!.z!);
             }
         }
 
@@ -593,13 +679,13 @@ class Player extends GameObject {
 
             // Debug Cube's 2d position to see if overlap occured
             console.log("Player Position Debug: ", Math.ceil(this.pos.x), "/", Math.ceil(this.pos.y));
-            console.log("Cube Position Debug: ", Math.ceil(this.cubePosition.x), "/", Math.ceil(this.cubePosition.y), "/");
+            console.log("Cube Position Debug: ", Math.ceil(this.cubePosition!.x), "/", Math.ceil(this.cubePosition!.y), "/");
 
             // Game Win Conditional
             // 
             // Hit Collision Detection
             // rewrite to use collisions instead
-            if (Math.ceil(this.pos.x - this.cubePosition.x) == 1) { //margin of error
+            if (Math.ceil(this.pos.x - this.cubePosition!.x) == 1) { //margin of error
                 console.log("Player And Cube Overlap on X Axis");
 
                 // increase score count
@@ -609,7 +695,7 @@ class Player extends GameObject {
                 //window.THREE_RENDER.deleteCube();
             }
 
-            if (Math.ceil(this.pos.y - this.cubePosition.y) == 1) {
+            if (Math.ceil(this.pos.y - this.cubePosition!.y) == 1) {
                 console.log("Player And Cube Overlap on Y Axis");
 
                 //increase score count
@@ -669,39 +755,6 @@ class Player extends GameObject {
 
 
 
-class Items extends GameObject {
-    // Items Base Class For Bombs, Arrows, Health Potion
-    constructor(item) {
-        if (item == "Generic Item") {
-            // Should Increase Player Speed
-
-            return 0;
-        }
-        if (item == "Bomb") {
-            // Should Instance A Bomb sprite with Animations
-
-            return 0;
-        }
-
-        if (item == "Health Potion") {
-            // Should Increase Players Health
-
-            return 0;
-        }
-        if (item == "Magic Potion") {
-            // Should Increase Player Magic Meter
-
-            return 0;
-        }
-
-        if (item == "Coin") {
-            // Should Increase Player Coin Count
-
-            return 0;
-        }
-    }
-}
-
 class ParticleFX extends GameObject {
     // TO DO : (1) Make A Sub function within Player Class 
     // 
@@ -720,7 +773,7 @@ class ParticleFX extends GameObject {
             color__.scale(0), color__.scale(0),       // colorEndA, colorEndB
             2, .4, 1, .001, .05,// time, sizeStart, sizeEnd, speed, angleSpeed
             .99, .95, 0, PI,    // damp, angleDamp, gravity, cone
-            .1, .5, 0, 1        // fade, randomness, collide, additive
+            .1, .5, false, false        // fade, randomness, collide, additive
         );
 
         // play some sfx
@@ -741,6 +794,11 @@ Features:
 */
 
 class Globals {
+    public health : number;
+    public players;
+    public scenes;
+    public score : number; 
+
     constructor() {
 
         // All Global Variables 
@@ -753,7 +811,19 @@ class Globals {
     }
 }
 
+class UI {
+    // UI class for css UI
+}
 
+declare global { 
+    interface Window{
+        globals: Globals,
+        music: Music,
+        inventory : Inventory,
+        ui: UI,
+        THREE_RENDER: ThreeRender,
+    }
+}
 
 
 /* LittleJS Main Loop*/
@@ -844,31 +914,35 @@ function gameRender() {
 
 
 function gameRenderPost() {
+
+    //create a font image using built in font
+    const font = new FontImage();
+
+
+     
+
+    // draw text
+    //font.drawTextScreen("LittleJS\nHello World!", vec2(200, 50));       
+
     // called after objects are rendered
     // draw effects or hud that appear above all objects
     // draw to overlay canvas for hud rendering
-    drawText = (text, x, y, size = 40) => {
-        overlayContext.textAlign = 'center';
-        overlayContext.textBaseline = 'top';
-        overlayContext.font = size + 'px arial';
-        overlayContext.fillStyle = '#fff';
-        overlayContext.lineWidth = 3;
-        overlayContext.strokeText(text, x, y);
-        overlayContext.fillText(text, x, y);
-    }
+    
+    
     if (window.THREE_RENDER.cube) {
-        drawText('Score: ' + window.globals.score + "/3", overlayCanvas.width * 3 / 4, 20);
+    
+        font.drawTextScreen("Score: " + window.globals.score, vec2(200, 50));
     }
 
     if (!window.THREE_RENDER.cube) {
 
-        drawText('You Win Click To Play Again! ', overlayCanvas.width * 2 / 4, 20); // Draw Health Bar Instead
+        //drawText('You Win Click To Play Again! ', 0, 20); // Draw Health Bar Instead
         //drawText('Deaths: ' + 0, overlayCanvas.width * 3 / 4, 20);
 
-
+        font.drawTextScreen("You Win Click To Play Again! ", vec2(200, 50));
 
     }
-    //
+    
 
 }
 
