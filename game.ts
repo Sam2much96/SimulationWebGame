@@ -4,6 +4,9 @@ Main Game Logic
 
 (1) Point and Click
 (2) Searches for overlaps between the 3d layer and threejs layer
+
+Bugs:
+(1) Mouse input isn't been captured and transfered to the player / goat object
 */
 
 "use strict"
@@ -16,7 +19,7 @@ import * as THREE from 'three';//'/node_modules/three/src/Three.js';
 import * as LittleJS from 'littlejsengine';
 
 const { tile, vec2, hsl,randColor,drawTextScreen, PI, EngineObject,FontImage, Timer, Sound, ParticleEmitter, timeDelta, Color, overlayContext,overlayCanvas,touchGamepadEnable, isTouchDevice, setTouchGamepadSize,setShowSplashScreen, setTouchGamepadEnable,// do not use pixelated rendering
-mousePos,mousePosScreen, mouseWasPressed,mouseWasReleased, keyWasPressed,setTouchGamepadAlpha,initTileCollision,setTouchGamepadAnalog,setSoundVolume,setSoundEnable, vibrate,setCanvasPixelated, setTileCollisionData, setTilesPixelated, setGravity,setCameraPos, setCameraScale, drawText,engineInit } = LittleJS;
+mousePos,mousePosScreen,isOverlapping, mouseWasPressed,mouseWasReleased, keyWasPressed,setTouchGamepadAlpha,initTileCollision,setTouchGamepadAnalog,setSoundVolume,setSoundEnable, vibrate,setCanvasPixelated, setTileCollisionData, setTilesPixelated, setGravity,setCameraPos, setCameraScale, drawText,engineInit } = LittleJS;
 
 
 const { Scene, PerspectiveCamera, WebGLRenderer, BufferAttribute, BufferGeometry, MeshBasicMaterial, Mesh } = THREE;
@@ -88,30 +91,10 @@ declare global {
         z: number;
     }
 
-    interface player_info { 0 :{ //server peer id
-        posi:Vector2, // position
-        vel:Vector2, // velocity
-        fr:number, // frame data
-        in:number, // input buffer from input singleton
-        hp:number,
-        st:number, // roll back networking state predictions
-        rd:Vector2, // roll direction
-        dx:number,
-        up:number, //persistent update id across client peers
-        wa:string, //Wallet address
-        ai:number, //Asset ID
-        sc:number, //Dapp ID
-        kc:number, //Client Kill Count
-        inv:string, // Client inventory items
-        rt:number, // respawn timer
-        hash:string, //hash splice for data integrity
-
-    }
-
     
 
 }
-}
+
 
 
 
@@ -194,70 +177,6 @@ Functions:
 
 */
 
-class Inputs {
-    public input_buffer : Array<number>;
-    public input_state : Map<String, number>;
-    public save_buffer : boolean = false;
-
-    constructor() {
-        // Input Buffer
-        this.input_buffer = [];
-
-        //Input Satte Machine Enumeration
-        this.input_state = new Map([
-            ['UP', 0],
-            ['DOWN', 1],
-            ['LEFT', 2],
-            ['RIGHT', 3],
-            ['ATTACK', 4],
-            ['ROLL', 5],
-        ]);
-
-
-        // Testing Input Enumeration
-        console.log("Input Debug 1: ", this.input_state.get("UP"));
-        //console.log("Input Debug 2: ",input_state.get("ATTACK");
-    }
-
-    // Returns The Input Buffer as An Array
-    get_Buffer() {
-        return this.input_buffer
-    }
-
-    update() {
-        // Maps Key Presses To Input States And Appends Them to The input buffer
-        //
-        // Move UP
-        //console.log("Testing Input Singleton");
-        if (this.save_buffer){ // input buffer logic
-            if (LittleJS.keyWasPressed('KeyW')) {
-                console.log("key W as pressed! ")
-                this.input_buffer.push(this.input_state.get("UP") ?? 0);
-            }
-
-            // Move Down
-            if (LittleJS.keyWasPressed('KeyS')) {
-                this.input_buffer.push(this.input_state.get("DOWN") ?? 1);
-            }
-
-            // Move Left
-            if (LittleJS.keyWasPressed('KeyA')) {
-                this.input_buffer.push(this.input_state.get("LEFT") ?? 2);
-            }
-
-            // Move Right
-            if (LittleJS.keyWasPressed('KeyD')) {
-                this.input_buffer.push(this.input_state.get("RIGHT") ?? 3);
-            }
-
-
-            // Prevents Buffer/ Mem Overflow for Input Buffer
-            if (this.input_buffer.length > 12) {
-                this.input_buffer.length = 0; // Clears the array
-            }
-        }
-    }
-}
 
 
 /*
@@ -551,7 +470,19 @@ Features:
 
 */
 
-class Player extends EngineObject {
+class PhysicsObject extends EngineObject
+{
+    constructor()
+    {
+        super();
+        //this.setCollision(); // make object collide
+        this.mass = 1; // make object have static physics
+    }
+}
+
+
+
+class Player extends PhysicsObject {
     public health : number;
     public cubePosition : Vector3 | null;
     public groundLevel : number
@@ -562,9 +493,14 @@ class Player extends EngineObject {
 
         super();
         
-        this.mass = 0;
+        //bug: player positioning doesnt work?
+        //this.pos = vec2(250,250);
+        //this.setCollision(); // make object collide
+        //this.mass = 0; // make object have static physics
+        
         console.log("Creating Player Sprite");
 
+        
         // Fetch Player Health From Globals Singleton
         // Update Globals With Player Pointer
         this.health = window.globals.health
@@ -580,6 +516,7 @@ class Player extends EngineObject {
 
         this.groundLevel = -13; // ground position for stopping Gravity on Cube 
 
+        
         // Add Player And Cube Collissions Where The Cube Collision tracks the Cube Object
 
     }
@@ -594,14 +531,21 @@ class Player extends EngineObject {
         // input singleton and interpolate positional data
         // sets Player Sprite Position to Mouse Position
         // mouse position in the screen space
+        
+        //console.log("position debug :", this.pos, "/", mousePos);
+        
+        //super.update();
         this.pos = mousePos;
 
-        //super.update();
+        super.update();
 
         // update cube 3d position
         if (window.THREE_RENDER.cube) {
+            // get this cube position
             this.cubePosition = window.THREE_RENDER.getCubePosition();
 
+            
+        
             // add gravity to cube
             if (this.cubePosition!.y > this.groundLevel) {
                 window.THREE_RENDER.setCubePosition(this.cubePosition!.x, this.cubePosition!.y -= 0.03, this.cubePosition!.z!);
@@ -625,6 +569,7 @@ class Player extends EngineObject {
             console.log(" Mouse Button 0 Pressed");
             window.music.zelda_powerup.play();
 
+            console.log("mouse pos debug 2: ", mousePos.x);
 
             // Debug Cube's 2d position to see if overlap occured
             console.log("Player Position Debug: ", Math.ceil(this.pos.x), "/", Math.ceil(this.pos.y));
@@ -633,30 +578,39 @@ class Player extends EngineObject {
             // Game Win Conditional
             // 
             // Hit Collision Detection
-            // rewrite to use collisions instead
-            if (Math.ceil(this.pos.x - this.cubePosition!.x) == 1) { //margin of error
-                console.log("Player And Cube Overlap on X Axis");
+            // rewrite to use collisions instead (done)
+            //if (Math.ceil(this.pos.x - this.cubePosition!.x) == 1) { //margin of error
+            //    console.log("Player And Cube Overlap on X Axis");
 
                 // increase score count
-                window.globals.score += 1;
+            //    window.globals.score += 1;
 
                 // delete Cube
                 //window.THREE_RENDER.deleteCube();
+            //}
+
+            // if player and threeJS cube object collide
+
+            if (isOverlapping(this.pos, this.size, vec2(this.cubePosition?.x, this.cubePosition?.y))){
+                console.log("Player & Cube Overlap");
+                window.globals.score += 1;
+
             }
 
-            if (Math.ceil(this.pos.y - this.cubePosition!.y) == 1) {
-                console.log("Player And Cube Overlap on Y Axis");
+            // rewritten to use littlejs collision system
+            //if (Math.ceil(this.pos.y - this.cubePosition!.y) == 1) {
+            //    console.log("Player And Cube Overlap on Y Axis");
 
                 //increase score count
-                window.globals.score += 1;
+            //    window.globals.score += 1;
 
                 //spawn 2d particle fx
                 //new ParticleFX(this.pos, this.size);
 
-            }
+            //}
 
             // Win condition
-            if (window.globals.score >= 3) {
+            if (window.globals.score === 3) {
 
                 //spawn 2d particle fx
                 new ParticleFX(this.pos, this.size);
@@ -667,6 +621,7 @@ class Player extends EngineObject {
             }
         }
 
+        //Set The Cube In a Random Position
         if (mouseWasReleased(0)) {
             console.log(" Mouse Button 0 Released");
             //window.music.zelda_powerup.play();
@@ -786,8 +741,8 @@ function gameInit() {
     //make global
     //window.music = music;
 
-    const input = new Inputs; // No Global Input Class, Player Object Handles Own Inputs
-    const player = new Player();
+    //const input = new Inputs; // No Global Input Class, Player Object Handles Own Inputs
+    var player = new Player();
 
 
     // Add  Inventory Items
