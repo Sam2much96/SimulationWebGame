@@ -12,9 +12,8 @@ Bugs:
 "use strict"
 
 
-// TO DO: import only the modules you need for faster load time
-import * as THREE from 'three';//'/node_modules/three/src/Three.js';
-//import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import * as THREE from 'three';
+
 
 import * as LittleJS from 'littlejsengine';
 
@@ -24,27 +23,10 @@ mousePos,mousePosScreen,isOverlapping, mouseWasPressed,mouseWasReleased, keyWasP
 
 const { Scene, PerspectiveCamera, WebGLRenderer, BufferAttribute, BufferGeometry, MeshBasicMaterial, Mesh } = THREE;
 // show the LittleJS splash screen
-setShowSplashScreen(true);
+setShowSplashScreen(false);
 
-// Show Game Pad on Mobile Devices
-//touchGamepadEnable = true;
 
-//console.log("Engine Version: ", engineVersion);
-/*
-All Music Logic In One Script
 
-Functions:
-(1) Plays Music Tracks
-(2) Shuffles Between A Playlist Using Maths module(3) Stores All Music To A Playlist
-(4) Stores All SFX
-(5) Play is called on the sfx track directly
-(6) Music Synthesizer Docs: https://keithclark.github.io/ZzFXM/
-
-Notes:
-(1) The SFX and Music Use 2 Different Systems, SFX USes ZzFX a js midi engine
-    whereas Music Uses Audio Tags written into the index.html file and called by Element ID
-(2) Most Browsers Refuse Audio music play by default unless the player / user enters an input gesture
-*/
 
 
 
@@ -59,8 +41,7 @@ Notes:
 */
 declare global {
     interface Window {
-        inventory: Inventory,
-        ui: UI,
+
         THREE_RENDER: ThreeRender,
         globals: Globals,
 
@@ -98,10 +79,22 @@ declare global {
 
 
 
-// sound effects
-//refactor to use zzfxm
-
 class Music {
+
+    /*
+    All Music Logic In One Script
+
+    Functions:
+    (1) Plays Music Tracks
+    (2) Shuffles Between A Playlist Using Maths module(3) Stores All Music To A Playlist
+    (4) Stores All SFX
+    (5) Play is called on the sfx track directly
+    (6) Music Synthesizer Docs: https://keithclark.github.io/ZzFXM/
+
+    To Do:
+    (1) Refactor to use Zzfxm
+    */
+
 
     // sound effects
     public sound_shoot : LittleJS.Sound;
@@ -165,32 +158,6 @@ class Music {
     }
 
 
-}
-
-/*
-Functions:
-
-(1) Handles And Porpagates all Input In the Game
-(2) Stores Input to An Input Buffer
-(3) Handles creation and Destruction of Game HUD as a child
-(4) Maps Player Input Action To A Global Enum
-
-*/
-
-
-
-/*
-Inventory Singleton
-
-
-Functions
-(1) Handles All Player Inventory
-(2) 
-
-*/
-
-class Inventory {
-    
 }
 
 
@@ -493,10 +460,6 @@ class Player extends PhysicsObject {
 
         super();
         
-        //bug: player positioning doesnt work?
-        //this.pos = vec2(250,250);
-        //this.setCollision(); // make object collide
-        //this.mass = 0; // make object have static physics
         
         console.log("Creating Player Sprite");
 
@@ -533,8 +496,7 @@ class Player extends PhysicsObject {
         // mouse position in the screen space
         
         //console.log("position debug :", this.pos, "/", mousePos);
-        
-        //super.update();
+        // works and is buggy mouse pos is captured incorrectly as 0,0      
         this.pos = mousePos;
 
         super.update();
@@ -556,10 +518,9 @@ class Player extends PhysicsObject {
         if (mouseWasPressed(0) && !window.THREE_RENDER.cube) {
 
             console.log("Restarting Game Loop");
-            //restart game loop
-            // destroy all objects
-            //engineObjectsDestroy();
-            //gameInit();
+
+            // code breaks with a wrong assert once win conditions are met
+            console.log("location debug 1: ", location);            
             location.reload();
         }
 
@@ -569,11 +530,11 @@ class Player extends PhysicsObject {
             console.log(" Mouse Button 0 Pressed");
             window.music.zelda_powerup.play();
 
-            console.log("mouse pos debug 2: ", mousePos.x);
 
             // Debug Cube's 2d position to see if overlap occured
-            console.log("Player Position Debug: ", Math.ceil(this.pos.x), "/", Math.ceil(this.pos.y));
+            console.log("Player Position Debug: ", mousePos, "/", this.pos);
             console.log("Cube Position Debug: ", Math.ceil(this.cubePosition!.x), "/", Math.ceil(this.cubePosition!.y), "/");
+
 
             // Game Win Conditional
             // 
@@ -621,6 +582,7 @@ class Player extends PhysicsObject {
             }
         }
 
+        // Left Click Released
         //Set The Cube In a Random Position
         if (mouseWasReleased(0)) {
             console.log(" Mouse Button 0 Released");
@@ -683,8 +645,8 @@ Features:
 
 class Globals {
     public health : number;
-    public players;
-    public scenes;
+    public players : any;
+    public scenes : any;
     public score : number; 
 
     constructor() {
@@ -699,19 +661,7 @@ class Globals {
     }
 }
 
-class UI {
-    // UI class for css UI
-}
 
-declare global { 
-    interface Window{
-        globals: Globals,
-        music: Music,
-        inventory : Inventory,
-        ui: UI,
-        THREE_RENDER: ThreeRender,
-    }
-}
 
 
 /* LittleJS Main Loop*/
@@ -730,7 +680,7 @@ function gameInit() {
     /* Create Global Singletons & Run System Tests */
 
 
-    window.inventory = new Inventory;
+    //window.inventory = new Inventory;
     window.globals = new Globals;
 
     window.music = new Music;
@@ -738,21 +688,9 @@ function gameInit() {
     // Play Music Loop WIth howler JS
     window.music.play_track(); // doesnt work
 
-    //make global
-    //window.music = music;
-
-    //const input = new Inputs; // No Global Input Class, Player Object Handles Own Inputs
     var player = new Player();
 
 
-    // Add  Inventory Items
-
-
-    //const TwoDCanvas = document.getElementById('littlejs-2d-layer')
-
-
-    //Debug music fx
-    //works
 
 
     //console.log("Music Debug 2: ", window.music.zelda_powerup);
@@ -763,12 +701,7 @@ function gameInit() {
 
     // It can set 2 cubes but only animate 1 cuz of this.cube pointer limitations
     window.THREE_RENDER.Cube();
-    //window.THREE_RENDER.Cube();
 
-
-
-    //window.THREE_RENDER.addToScene(c1);
-    // window.THREE_RENDER.addToScene(c2);
     window.THREE_RENDER.setCamera(16);
 
     window.THREE_RENDER.animate();
@@ -792,9 +725,6 @@ function gameRender() {
     // triggers the LittleJS renderer
     // called before objects are rendered
     // draw any background effects that appear behind objects
-    //const y = new glContext;
-
-    //drawRect(cameraPos, vec2(100), new Color(.5, .5, .5)); // draw background
 }
 
 
