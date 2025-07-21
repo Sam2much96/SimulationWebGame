@@ -201,17 +201,35 @@ class ThreeRender {
         // Create the scene, camera, and renderer
         this.scene = new Scene();
         this.camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.renderer = new WebGLRenderer();
+        
+        // Enable transparency and disable mouse events
+        this.renderer = new WebGLRenderer({ 
+            alpha: true,
+            antialias: true
+        });
 
 
         this.renderer.setSize(window.innerWidth, window.innerHeight);
 
         // Append the renderer's DOM element to your target layer
-        var threejsLayer = document.getElementById("threejs-layer");
+        var threejsContainer = document.getElementById("threejs-layer");
         
-        if (threejsLayer){
-            threejsLayer.appendChild(this.renderer.domElement);
+        if (threejsContainer){
+            //threejsLayer.appendChild(this.renderer.domElement);
+            // Make sure the canvas doesn't interfere with mouse input
+            const canvas = this.renderer.domElement;
+            canvas.style.pointerEvents = 'none';
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            threejsContainer.appendChild(canvas);
+            console.log("Three.js canvas added with pointer-events: none");
         }
+        else {
+            console.error("threejs-container not found!");
+        }
+
+        console.log("three js layer debug: ", threejsContainer);
         // A placeholder for the cube mesh
         this.cube = null;
 
@@ -497,7 +515,8 @@ class Player extends PhysicsObject {
         
         //console.log("position debug :", this.pos, "/", mousePos);
         // works and is buggy mouse pos is captured incorrectly as 0,0      
-        this.pos = mousePos;
+        //console.log("Mouse in update:", mousePos); // Should work!
+        this.pos = mousePos.copy();
 
         super.update();
 
@@ -530,6 +549,7 @@ class Player extends PhysicsObject {
             console.log(" Mouse Button 0 Pressed");
             window.music.zelda_powerup.play();
 
+            //this.debugMouseInput();
 
             // Debug Cube's 2d position to see if overlap occured
             console.log("Player Position Debug: ", mousePos, "/", this.pos);
@@ -601,7 +621,28 @@ class Player extends PhysicsObject {
 
 
     }
+
+    debugMouseInput() {
+    console.log("=== Mouse Debug Info ===");
+    console.log("mousePos:", mousePos);
+    console.log("mousePosScreen:", mousePosScreen);
+    console.log("Canvas elements:", document.querySelectorAll('canvas'));
+    console.log("Active element:", document.activeElement);
+    
+    // Check if there are multiple canvases interfering
+    const canvases = document.querySelectorAll('canvas');
+    canvases.forEach((canvas, index) => {
+        console.log(`Canvas ${index}:`, {
+            id: canvas.id,
+            zIndex: getComputedStyle(canvas).zIndex,
+            pointerEvents: getComputedStyle(canvas).pointerEvents,
+            position: getComputedStyle(canvas).position
+        });
+    });
 }
+}
+
+
 
 
 
@@ -663,6 +704,27 @@ class Globals {
 
 
 
+// STEP 4: Add canvas cleanup function to call before engine init
+function cleanupExtraCanvases() {
+    console.log("Cleaning up extra canvases...");
+    
+    // Get all canvas elements
+    const allCanvases = document.querySelectorAll('canvas');
+    console.log(`Found ${allCanvases.length} canvas elements`);
+    
+    // Remove any canvas that's not in the threejs-container
+    allCanvases.forEach((canvas, index) => {
+        const parent = canvas.parentElement;
+        if (parent && parent.id !== 'threejs-container') {
+            // Only remove if it's not the LittleJS main canvas (which hasn't been created yet)
+            if (canvas.id === 'threejs-layer' || canvas.id === 'littlejs-2d-layer') {
+                console.log(`Removing canvas ${index} with id: ${canvas.id}`);
+                canvas.remove();
+            }
+        }
+    });
+}
+
 
 /* LittleJS Main Loop*/
 
@@ -673,6 +735,8 @@ function gameInit() {
     // setup the game
     console.log("Game Started!");
 
+
+    //cleanupExtraCanvases();
     /* Create 3D Scenes And Objects*/
     window.THREE_RENDER = new ThreeRender();
 

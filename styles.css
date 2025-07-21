@@ -1,40 +1,28 @@
-/* 
-    CSS Stylesheet
-    Separate Each element into Different Layers in The CSS Style Sheet 
-    
-    (1) Background Layer Is Set To transparent
-    */
-    body {
-        margin: 0;
-        overflow: hidden;
-        /* Prevent scrolling */
-    }
+body {
+    margin: 0;
+    overflow: hidden;
+}
 
-    .layer {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: all;
-    }
+#background-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -10;
+    background: #000000;
+}
 
-    #background-layer {
-        z-index: -10;
-        /* Rendered at the bottom */
-        background: #ffffff;
-        /* Example background color */
-    }
+#threejs-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none; /* Critical: Let mouse pass through */
+}
 
-    #threejs-layer {
-        z-index: 0;
-        /* Three.js canvas in the middle */
-        pointer-events: none;
-    }
-
-    #littlejs-2d-layer {
-        z-index: 1000  ;
-        /* LittleJS or 2D overlay on top */
-        pointer-events: all;
-    }
-
+#threejs-container canvas {
+    pointer-events: none !important; /* Force no mouse capture */
+}
