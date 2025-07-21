@@ -18,8 +18,8 @@ import * as THREE from 'three';
 
 import * as LittleJS from 'littlejsengine';
 
-const { tile, vec2, hsl,randColor,drawTextScreen,worldToScreen, screenToWorld,PI, EngineObject,FontImage, Timer, Sound, ParticleEmitter, timeDelta, Color, overlayContext,overlayCanvas,touchGamepadEnable, isTouchDevice, setTouchGamepadSize,setShowSplashScreen, setTouchGamepadEnable,// do not use pixelated rendering
-mousePos,mousePosScreen,isOverlapping, mouseWasPressed,mouseWasReleased, getMousePos,setTouchInputEnable, keyWasPressed,setTouchGamepadAlpha,initTileCollision,setTouchGamepadAnalog,setSoundVolume,setSoundEnable, vibrate,setCanvasPixelated, setTileCollisionData, setTilesPixelated, setGravity,setCameraPos, setCameraScale, drawText,engineInit } = LittleJS;
+const { tile, vec2, hsl,randColor,PI, EngineObject,FontImage, Timer, Sound, ParticleEmitter, timeDelta, Color,setShowSplashScreen,
+isOverlapping, mouseWasPressed,mouseWasReleased,setTouchInputEnable, setCameraPos, setCameraScale, drawText,engineInit } = LittleJS;
 
 
 const { Scene, PerspectiveCamera, WebGLRenderer, BufferAttribute, BufferGeometry, MeshBasicMaterial, Mesh } = THREE;
@@ -526,8 +526,6 @@ class Player extends PhysicsObject {
         this.groundLevel = -13; // ground position for stopping Gravity on Cube 
 
         
-        // Add Player And Cube Collissions Where The Cube Collision tracks the Cube Object
-
     }
     hit_animation() {
 
@@ -542,8 +540,8 @@ class Player extends PhysicsObject {
         // mouse position in the screen space
         
 
-        
-        this.pos = getMousePos().copy();
+
+        this.pos = LittleJS.mousePos;// getMousePos().copy();
 
         super.update();
 
@@ -608,15 +606,10 @@ class Player extends PhysicsObject {
 
         // Left Click Released
         //Set The Cube In a Random Position
-        if (mouseWasReleased(0)) {
-            
+        if (mouseWasReleased(0)) {           
             window.THREE_RENDER.setCubePosition(Math.random() * 10 - 5, Math.random() * 15 - 8, 0);
-
-         }
-
-
+        }
     }
-
 
 }
 
@@ -689,38 +682,19 @@ class Globals {
 
 
 function gameInit() {
-    // called once after the engine starts up
-    // setup the game
-    //console.log("Game Started!");
 
-
-    //cleanupExtraCanvases();
-    /* Create 3D Scenes And Objects*/
     window.THREE_RENDER = new ThreeRender();
-
-
-    /* Create Global Singletons & Run System Tests */
-
-
-    //window.inventory = new Inventory;
     window.globals = new Globals();
-
     window.music = new Music();
-
-    // Play Music Loop WIth howler JS
-    //window.music.play_track(); // doesnt work
 
     window.player = new Player();
 
 
-    const r = new tracker(); // for tracking the 3d cube position
-
+    const r = new tracker(); // 2d object for tracking the 3d cube position
 
     // It can set 2 cubes but only animate 1 cuz of this.cube pointer limitations
     window.THREE_RENDER.Cube();
-
     window.THREE_RENDER.setCamera(16);
-
     window.THREE_RENDER.animate();
 
 
@@ -729,9 +703,6 @@ function gameInit() {
 function gameUpdate() {
     // called every frame at 60 frames per second
     // handle input and update the game state
-    
-    // doesn't propagate mouse input
-    //console.log("mouse pos debug:", mousePos);
 
 }
 
@@ -762,18 +733,12 @@ function gameRenderPost() {
     // draw to overlay canvas for hud rendering
     
     
-    if (window.THREE_RENDER && window.THREE_RENDER.cube) {
-    
+    if (window.THREE_RENDER && window.THREE_RENDER.cube) {    
         font.drawTextScreen("Score: " + window.globals.score + "/3", vec2(200, 50));
     }
 
     if (!window.THREE_RENDER.cube ) {
-
-        //drawText('You Win Click To Play Again! ', 0, 20); // Draw Health Bar Instead
-        //drawText('Deaths: ' + 0, overlayCanvas.width * 3 / 4, 20);
-
-        font.drawTextScreen("You Win Click To Play Again! ", vec2(200, 50));
-
+        font.drawTextScreen("You Win Click To Play Again! ", vec2(200, 50));    
     }
     
 
